@@ -1,38 +1,33 @@
-const startButton = document.getElementById('startbutton');
-const stopButton = document.getElementById('stopbutton');
+const startbtn = document.getElementById('startbtn');
+const stopbtn = document.getElementById('stopbtn');
 
 let audioContext;
 let micStreamAudioSourceNode;
 let audioWorkletNode;
 
-startButton.addEventListener('click', async () => {
-  // Check if the browser supports the required APIs
-  if (!window.AudioContext || 
-      !window.MediaStreamAudioSourceNode || 
-      !window.AudioWorkletNode) {
-    alert('Your browser does not support the required APIs');
+//시작버튼 입력시
+startbtn.addEventListener('click', async () => {
+  
+  //에러 체크
+  if (!window.AudioContext || !window.MediaStreamAudioSourceNode || !window.AudioWorkletNode) {
+    alert('api 에러');
     return;
   }
-
-  // Request access to the user's microphone
+  
+  //마이크 권한
   const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  // Create the microphone stream
+  //음성 입력받기
   audioContext = new AudioContext();
-  mediaStreamAudioSourceNode = audioContext
-      .createMediaStreamSource(micStream);
+  mediaStreamAudioSourceNode = audioContext.createMediaStreamSource(micStream);
 
-  // Create and connect AudioWorkletNode 
-  // for processing the audio stream
-  await audioContext
-      .audioWorklet
-      .addModule("my-audio-processor.js");
-  audioWorkletNode = new AudioWorkletNode(
-      audioContext,
-      'my-audio-processor');
+  //
+  await audioContext.audioWorklet.addModule("my-audio-processor.js");
+  audioWorkletNode = new AudioWorkletNode(audioContext,'my-audio-processor');
   micStreamAudioSourceNode.connect(audioWorkletNode);
 });
 
+//중지버튼 입력시
 stopButton.addEventListener('click', () => {
   // Close audio stream
   micStreamAudioSourceNode.disconnect();

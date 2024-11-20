@@ -23,7 +23,7 @@ startbtn.addEventListener('click', async () => {
 
   //
   await audioContext.audioWorklet.addModule("audioprocess.js");
-  audioWorkletNode = new AudioWorkletNode(audioContext,'my-audio-processor');
+  audioWorkletNode = new AudioWorkletNode(audioContext,'audioprocess');
   micStreamAudioSourceNode.connect(audioWorkletNode);
 });
 

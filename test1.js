@@ -22,7 +22,7 @@ startbtn.addEventListener('click', async () => {
 });
 
 //중지버튼 입력시
-stopButton.addEventListener('click', () => {
+stopbtn.addEventListener('click', () => {
   micStreamAudioSourceNode.disconnect();
   audioContext.close();
 });

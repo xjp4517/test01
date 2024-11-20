@@ -1,19 +1,8 @@
-class RecorderWorkletProcessor extends AudioWorkletProcessor {
-  constructor() {
-    super();
-    this.recordedChunks = [];
-  }
-
-  process(inputs, outputs, parameters) {
-    const input = inputs[0];
-    this.recordedChunks.push(new Float32Array(input[0]));
-    return true;
-  }
-
-  //녹음된 오디오 반환
-  getRecordedChunks() {
-    return this.recordedChunks;
-  }
+class MyAudioProcessor extends AudioWorkletProcessor {
+    process(inputs, outputs, parameters) {
+        const inputData = inputs[0][0];
+        return true;
+    }
 }
 
-registerProcessor('recorder-worklet', RecorderWorkletProcessor);
+registerProcessor('my-audio-processor', MyAudioProcessor);

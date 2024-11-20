@@ -29,7 +29,6 @@ startbtn.addEventListener('click', async () => {
 
 //중지버튼 입력시
 stopButton.addEventListener('click', () => {
-  // Close audio stream
   micStreamAudioSourceNode.disconnect();
   audioContext.close();
 });

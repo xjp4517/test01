@@ -1,5 +1,5 @@
-const startButton = document.getElementById('start-button');
-const stopButton = document.getElementById('stop-button');
+const startButton = document.getElementById('startbutton');
+const stopButton = document.getElementById('stopbutton');
 
 let audioContext;
 let micStreamAudioSourceNode;
@@ -15,9 +15,7 @@ startButton.addEventListener('click', async () => {
   }
 
   // Request access to the user's microphone
-  const micStream = await navigator
-      .mediaDevices
-      .getUserMedia({ audio: true });
+  const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
   // Create the microphone stream
   audioContext = new AudioContext();

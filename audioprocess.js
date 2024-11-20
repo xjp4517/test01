@@ -10,7 +10,7 @@ class RecorderWorkletProcessor extends AudioWorkletProcessor {
     return true;
   }
 
-  // 녹음된 오디오 데이터를 반환하는 함수
+  //녹음된 오디오 반환
   getRecordedChunks() {
     return this.recordedChunks;
   }

@@ -11,4 +11,9 @@ startBtn.addEventListener('click', async () => {
   //마이크 권한
   const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
+  //음성 입력받기
+  audioContext = new AudioContext();
+  mediaStreamAudioSourceNode = audioContext.createMediaStreamSource(micStream);
+
+
 });

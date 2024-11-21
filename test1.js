@@ -1,12 +1,12 @@
-const startbtn = document.getElementById('startbtn');
-const stopbtn = document.getElementById('stopbtn');
+const startBtn = document.getElementById('startbtn');
+const stopBtn = document.getElementById('stopbtn');
 
 let audioContext;
-let micStreamAudioSourceNode;
+let mediaStreamAudioSourceNode;
 let audioWorkletNode;
 
 //시작버튼 입력시
-startbtn.addEventListener('click', async () => {
+startBtn.addEventListener('click', async () => {
   
   //마이크 권한
   const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -18,11 +18,11 @@ startbtn.addEventListener('click', async () => {
   //
   await audioContext.audioWorklet.addModule("audioprocess.js");
   audioWorkletNode = new AudioWorkletNode(audioContext,'audioprocess');
-  micStreamAudioSourceNode.connect(audioWorkletNode);
+  mediaStreamAudioSourceNode.connect(audioWorkletNode);
 });
 
 //중지버튼 입력시
-stopbtn.addEventListener('click', () => {
-  micStreamAudioSourceNode.disconnect();
+stopBtn.addEventListener('click', () => {
+  mediaStreamAudioSourceNode.disconnect();
   audioContext.close();
 });

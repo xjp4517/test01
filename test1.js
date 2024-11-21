@@ -23,6 +23,7 @@ startBtn.addEventListener('click', async () => {
 
 //중지버튼 입력시
 stopBtn.addEventListener('click', () => {
+  console.log("녹음 중지");
   mediaStreamAudioSourceNode.disconnect();
   audioContext.close();
 });

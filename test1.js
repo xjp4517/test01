@@ -25,4 +25,5 @@ startBtn.addEventListener('click', async () => {
 stopBtn.addEventListener('click', () => {
   mediaStreamAudioSourceNode.disconnect();
   audioContext.close();
+  const micStream = await navigator.mediaDevices.getUserMedia({ audio: false });
 });

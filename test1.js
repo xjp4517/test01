@@ -15,5 +15,17 @@ startBtn.addEventListener('click', async () => {
   audioContext = new AudioContext();
   mediaStreamAudioSourceNode = audioContext.createMediaStreamSource(micStream);
 
+  //
+  await audioContext.audioWorklet.addModule("audioprocess.js");
+  audioWorkletNode = new AudioWorkletNode(audioContext,'audioprocess');
+  mediaStreamAudioSourceNode.connect(audioWorkletNode);
+});
+
+//중지버튼 입력시
+stopBtn.addEventListener('click', () => {
+  mediaStreamAudioSourceNode.disconnect();
+  audioContext.close();
+  const micStream = await navigator.mediaDevices.getUserMedia({ audio: false });
+
 
 });

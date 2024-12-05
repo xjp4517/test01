@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>소리 예측</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/meyda/dist/web/meyda.min.js"></script>
+</head>
+
+<body>
+    <h1>녹음 기반 소리 예측</h1>
+    <button id="start">녹음 시작</button>
+    <button id="stop" disabled>녹음 중지</button>
+    <p id="output">결과: </p>
+
+    <script>
+        let audioContext, microphone, scriptProcessor, meydaAnalyzer;
+        let model;
+        const labels = ["경적", "주행음", "공사장", "개소리"];
+        const output = document.getElementById("output");
+
+        // TensorFlow.js 모델 로드
+        async function loadModel() {
+            model = await tf.loadLayersModel('https://chihit-cloud.github.io/sound_classification/model.json'); // 모델 파일 경로
+            console.log("모델 로드 완료!");
+        }
+        loadModel();
+
+        let mfccBuffer = []; // MFCC 데이터를 저장할 버퍼
+        let lastTime = 0; // 마지막 타이머 실행 시간 추적
+        let lastPredictionTime = 0; // 마지막 예측 시간 추적
+        const PREDICTION_INTERVAL = 2000; // 예측 주기 (2초)
+
+        // 녹음 시작
+        document.getElementById("start").addEventListener("click", async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            microphone = audioContext.createMediaStreamSource(stream);
+            scriptProcessor = audioContext.createScriptProcessor(16384, 1, 1);  // 버퍼 크기 설정
+
+            // Meyda 설정
+            meydaAnalyzer = Meyda.createMeydaAnalyzer({
+                audioContext: audioContext,
+                source: microphone,
+                bufferSize: 2048,  // 한 버퍼 크기
+                featureExtractors: ["mfcc"],
+                callback: processAudio
+            });
+
+            // 녹음 시작
+            meydaAnalyzer.start();
+            document.getElementById("start").disabled = true;
+            document.getElementById("stop").disabled = false;
+
+            // requestAnimationFrame으로 타이밍 동기화
+            function onFrame(timestamp) {
+                const elapsedTime = timestamp - lastTime;
+
+                if (elapsedTime >= PREDICTION_INTERVAL) {  // 2초 경과 시 예측 실행
+                    if (mfccBuffer.length > 0 && (timestamp - lastPredictionTime >= PREDICTION_INTERVAL)) {
+                        predictSound(mfccBuffer);
+                        mfccBuffer = []; // 예측 후 버퍼 초기화
+                        lastPredictionTime = timestamp;  // 마지막 예측 시간 갱신
+                    }
+                    lastTime = timestamp;  // 마지막 타임스탬프 갱신
+                }
+
+                requestAnimationFrame(onFrame);  // 계속해서 호출
+            }
+
+            // 최초 호출
+            requestAnimationFrame(onFrame);
+        });
+
+        // 녹음 중지
+        document.getElementById("stop").addEventListener("click", () => {
+            meydaAnalyzer.stop();
+            scriptProcessor.disconnect();
+            microphone.disconnect();
+            audioContext.close();
+
+            document.getElementById("start").disabled = false;
+            document.getElementById("stop").disabled = true;
+        });
+
+        // 오디오 데이터를 처리하는 함수
+        function processAudio(features) {
+            if (!features.mfcc || features.mfcc.length === 0) {
+                console.error("MFCC 데이터가 없습니다.");
+                return;
+            }
+
+            // 새로운 MFCC 벡터 추가
+            mfccBuffer.push(features.mfcc);
+
+            // 버퍼가 5개 이상의 프레임을 모은 경우 예측
+            if (mfccBuffer.length > 5) { // 2초 동안 데이터를 모은 후 예측
+                mfccBuffer.shift(); // 가장 오래된 데이터 제거
+            }
+        }
+
+        // 예측을 실행하는 함수
+        function predictSound(mfccData) {
+            console.log("예측을 위한 MFCC 데이터:", mfccData); // MFCC 데이터 출력
+
+            // MFCC를 [100, 13] 형태로 맞추기 위해 패딩
+            const paddedMFCC = padMFCCs(mfccData, 100);
+
+            // [100, 13] -> [1, 100, 13]
+            const mfccTensor = tf.tensor(paddedMFCC).expandDims(0);
+            console.log("MFCC 텐서:", mfccTensor.shape); // 텐서 형태 출력
+
+            // [1, 100, 13] -> [1, 13, 100]
+            const transposedTensor = mfccTensor.transpose([0, 2, 1]);
+            console.log("전치된 텐서:", transposedTensor.shape); // 전치된 텐서 출력
+
+            // 모델 예측
+            const predictions = model.predict(transposedTensor);
+            predictions.array().then((predictionArray) => {
+                // 예측된 확률 배열
+                const predictionConfidences = predictionArray[0];
+
+                // 가장 높은 확률을 가진 예측값
+                const predictedIndex = tf.argMax(predictions, 1).dataSync()[0];
+                const predictedLabel = labels[predictedIndex];
+                const predictedConfidence = predictionConfidences[predictedIndex];
+
+                // 예측값의 확률이 임계값을 넘는 경우만 출력
+                if (predictedConfidence >= 0.5) {
+                    console.log("예측된 라벨:", predictedLabel);
+                    console.log("예측 확률:", predictedConfidence); // 확률 출력
+                    output.textContent = `예측 결과: ${predictedLabel} (확률: ${predictedConfidence.toFixed(2)})`;
+
+                    // 기기에 진동 주기 (예: 500ms 진동)
+                    navigator.vibrate(500); // 진동을 주기
+
+                } else {
+                    console.log("확신이 부족한 예측입니다.");
+                    output.textContent = `확신이 부족한 예측입니다. (확률: ${predictedConfidence.toFixed(2)})`;
+
+                }
+
+                // 모든 레이블의 확률을 출력
+                labels.forEach((label, index) => {
+                    const confidence = predictionConfidences[index];
+                    console.log(`${label}: ${confidence.toFixed(2)}`);
+                });
+
+            }).catch((error) => {
+                console.error("예측 오류:", error);
+            });
+        }
+
+
+        // 프레임 개수를 100으로 맞추는 함수
+        function padMFCCs(mfccs, targetFrames) {
+            if (mfccs.length >= targetFrames) {
+                // 필요한 프레임만 자르기
+                return mfccs.slice(0, targetFrames);
+            } else {
+                // 부족한 프레임을 0으로 패딩
+                const padding = Array(targetFrames - mfccs.length).fill(Array(13).fill(0));
+                return [...mfccs, ...padding];
+            }
+        }
+    </script>
+</body>
+
+</html>
